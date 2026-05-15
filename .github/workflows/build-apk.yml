@@ -1,4 +1,4 @@
-name: ECUAMAPS PRO - DevOps Ultimate Build
+name: ECUAMAPS PRO - Final Native Build
 
 on:
   push:
@@ -6,93 +6,66 @@ on:
   workflow_dispatch:
 
 env:
-  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
   NDK_VERSION: 25.2.9519653
 
 jobs:
-  build:
-    name: Compilación Industrial APK
+  build-android:
+    name: Industrial NDK Compilation
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Optimización de Espacio en Disco
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force > /dev/null
-
-      - name: 2. Checkout de Fuentes
+      - name: 1. Checkout (Full History + Recursive Submodules)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 200
+          fetch-depth: 0
+          submodules: recursive
 
-      - name: 3. Restore Boost submodule from cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            3party/boost
-            .git/modules/3party/boost
-          key: boost-submodule
-
-      - name: 4. Inicialización Robusta de Submódulos
+      - name: 2. Install Build Tools
         run: |
-          git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
-          # Verificación crítica de dependencias nativas
-          if [ ! -d "3party/boost" ]; then
-            echo "❌ Error: Submódulo Boost no encontrado. Reintentando..."
-            git submodule update --init --recursive 3party/boost
-          fi
+          sudo apt-get update -y
+          sudo apt-get install -y cmake ninja-build g++-multilib python3-dev clang ccache
 
-      - name: 5. Configuración de Entorno Java y NDK
+      - name: 3. Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 6. Instalación de Dependencias Nativas (Ubuntu)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y cmake ninja-build ccache g++-multilib clang
-
-      - name: 7. Configuración de NDK específico
+      - name: 4. Setup Android NDK
         run: |
           ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
           echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
-      - name: 8. Persistencia de Caché (CCache)
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ runner.os }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-ccache-
+      - name: 5. Initialize Boost Engine
+        run: |
+          cd 3party/boost
+          ./bootstrap.sh
+          ./b2 headers
+        # Note: We only need headers for the C++ engine usually, but we follow b2 initialization
 
-      - name: 9. Aplicación de Permisos de Ejecución
+      - name: 6. Rebrand Application ID (Author Attribution)
+        run: |
+          sed -i "s/appId = 'app.ecuamaps'/appId = 'com.tranquilino.ecuamaps'/g" android/build.gradle
+          # Verify change
+          grep "appId =" android/build.gradle
+
+      - name: 7. Permissions & Configuration
         run: |
           chmod +x ./configure.sh
           chmod +x ./android/gradlew
-          find . -name "*.sh" -exec chmod +x {} +
+          ./configure.sh
 
-      - name: 10. Configuración del Repositorio (C++ Engine)
-        run: ./configure.sh
-
-      - name: 11. Compilación del APK (Ignorando Warnings)
+      - name: 8. Execute Industrial Compilation
         working-directory: android
-        env:
-          CMAKE_C_COMPILER_LAUNCHER: ccache
-          CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
           ./gradlew assembleWebDebug \
             -Parm64 \
             -Dorg.gradle.project.android.enableLint=false \
-            -Dorg.gradle.warning.mode=none \
             --stacktrace
 
-      - name: 12. Persistencia del Artefacto Final
+      - name: 9. Persistence of APK
         uses: actions/upload-artifact@v4
         with:
-          name: ECUAMAPS-PRO-Industrial-Build
+          name: ECUAMAPS-PRO-Final-APK
           path: android/app/build/outputs/apk/**/ecuamaps-*.apk
           if-no-files-found: error
-          retention-days: 7
