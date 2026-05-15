@@ -1,0 +1,45 @@
+name: ECUAMAPS PRO - Generador de APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compilar APK Nativa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Configurar Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Android SDK & NDK
+        uses: android-actions/setup-android@v2
+
+      - name: Instalar NDK específico
+        run: |
+          sdkmanager --install "ndk;25.2.9519653"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      - name: Preparar Herramientas de Compilación
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++-multilib
+
+      - name: Compilar APK (Debug para pruebas)
+        run: |
+          cd android
+          ./gradlew assembleWebDebug --stacktrace
+
+      - name: Entregar APK (Artifact)
+        uses: actions/upload-artifact@v3
+        with:
+          name: ecuamaps-pro-debug-apk
+          path: android/app/build/outputs/apk/web/debug/app-web-debug.apk
