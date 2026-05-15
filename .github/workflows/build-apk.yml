@@ -22,46 +22,62 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo docker image prune --all --force > /dev/null
 
-      - name: 2. Checkout de Fuentes (Recursivo)
+      - name: 2. Checkout de Fuentes
         uses: actions/checkout@v4
         with:
-          fetch-depth: 100
-          submodules: recursive
+          fetch-depth: 200
 
-      - name: 3. Configuración de Entorno Java y NDK
+      - name: 3. Restore Boost submodule from cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            3party/boost
+            .git/modules/3party/boost
+          key: boost-submodule
+
+      - name: 4. Inicialización Robusta de Submódulos
+        run: |
+          git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
+          # Verificación crítica de dependencias nativas
+          if [ ! -d "3party/boost" ]; then
+            echo "❌ Error: Submódulo Boost no encontrado. Reintentando..."
+            git submodule update --init --recursive 3party/boost
+          fi
+
+      - name: 5. Configuración de Entorno Java y NDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 4. Instalación de Dependencias Nativas (Ubuntu)
+      - name: 6. Instalación de Dependencias Nativas (Ubuntu)
         run: |
           sudo apt-get update -y
           sudo apt-get install -y cmake ninja-build ccache g++-multilib clang
 
-      - name: 5. Configuración de NDK específico
+      - name: 7. Configuración de NDK específico
         run: |
           ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
           echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
-      - name: 6. Persistencia de Caché (CCache)
+      - name: 8. Persistencia de Caché (CCache)
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ runner.os }}-ccache-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-ccache-
 
-      - name: 7. Aplicación de Permisos de Ejecución
+      - name: 9. Aplicación de Permisos de Ejecución
         run: |
           chmod +x ./configure.sh
           chmod +x ./android/gradlew
           find . -name "*.sh" -exec chmod +x {} +
 
-      - name: 8. Configuración del Repositorio (C++ Engine)
+      - name: 10. Configuración del Repositorio (C++ Engine)
         run: ./configure.sh
 
-      - name: 9. Compilación del APK (Ignorando Warnings)
+      - name: 11. Compilación del APK (Ignorando Warnings)
         working-directory: android
         env:
           CMAKE_C_COMPILER_LAUNCHER: ccache
@@ -73,7 +89,7 @@ jobs:
             -Dorg.gradle.warning.mode=none \
             --stacktrace
 
-      - name: 10. Persistencia del Artefacto Final
+      - name: 12. Persistencia del Artefacto Final
         uses: actions/upload-artifact@v4
         with:
           name: ECUAMAPS-PRO-Industrial-Build
