@@ -1,0 +1,6 @@
+description = "Review code changes or PR for bugs, style issues, and potential problems specific to ECUAMAPS"
+prompt = """
+@{.github/skills/om-review.md}
+
+Review target: {{args}}
+"""

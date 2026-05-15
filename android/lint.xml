@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+  <issue id="MissingTranslation" severity="ignore" />
+
+  <!-- https://github.com/ecuamaps/ecuamaps/issues/3551 -->
+  <issue id="MissingQuantity" severity="ignore" />
+  <issue id="UnusedQuantity" severity="ignore" />
+
+  <!-- https://github.com/ecuamaps/ecuamaps/issues/3550 -->
+  <issue id="ByteOrderMark" severity="ignore" />
+
+  <!-- https://github.com/ecuamaps/ecuamaps/issues/1077 -->
+  <issue id="CustomSplashScreen" severity="ignore" />
+
+  <!-- https://github.com/ecuamaps/ecuamaps/issues/3610 -->
+  <issue id="InsecureBaseConfiguration" severity="ignore" />
+</lint>

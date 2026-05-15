@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discussions
+    url: https://github.com/ecuamaps/ecuamaps/discussions
+    about: Discuss the usage of ECUAMAPS, ask questions, or talk about ideas that aren't yet actionable.
+  - name: Translations
+    url: https://github.com/ecuamaps/ecuamaps/blob/master/docs/TRANSLATIONS.md
+    about: Translate ECUAMAPS into your language
+  - name: News
+    url: https://ecuamaps.app/news/
+    about: Check the latest project news

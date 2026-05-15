@@ -1,0 +1,84 @@
+# Default owner.
+* @ecuamaps/mergers
+
+# Android (catch-all — must precede android-specific overrides).
+/android/ @ecuamaps/android
+# no owner for translation changes
+/android/app/src/main/res/values*/strings.xml
+/android/sdk/src/main/res/values*/strings.xml
+/android/sdk/src/main/res/values*/types_strings.xml
+
+# iOS (catch-all — must precede ios-specific overrides).
+/iphone/ @ecuamaps/ios
+/xcode/ @ecuamaps/ios
+# no owner for translation changes
+/iphone/plist.txt
+/iphone/Maps/LocalizedStrings/
+
+# Visual design (overrides — AFTER android/ios catch-alls).
+/android/app/src/main/res/drawable*/ @ecuamaps/design
+/android/app/src/main/res/font/ @ecuamaps/design
+/android/libs/branding/ @ecuamaps/design
+/iphone/Maps/Images.xcassets/ @ecuamaps/design
+/data/fonts/*.ttf @ecuamaps/design
+/data/symbols-svg/ @ecuamaps/design
+/data/search-icons/ @ecuamaps/design
+
+# Android Auto (overrides — AFTER android catch-all).
+/android/app/src/main/java/app/ecuamaps/car/ @ecuamaps/android-auto
+/android/libs/car/ @ecuamaps/android-auto
+/android/sdk/car/ @ecuamaps/android-auto
+
+# Qt.
+/qt/ @ecuamaps/qt
+
+# Rendering (updated paths).
+/libs/drape/ @ecuamaps/rendering
+/libs/drape_frontend/ @ecuamaps/rendering
+
+# Map Data.
+/tools/python/maps_generator/ @ecuamaps/data
+/generator/ @ecuamaps/data
+/data/borders/ @ecuamaps/data
+/data/conf/isolines/ @ecuamaps/data
+/docs/SUBWAY_GENERATION.md @ecuamaps/data
+/docs/MAPS.md @ecuamaps/data
+/docs/EXPERIMENTAL_PUBLIC_TRANSPORT_SUPPORT.md @ecuamaps/data
+# no owner (changed often to add a new POI)
+/generator/generator_tests/osm_type_test.cpp
+
+# Map Styles.
+/data/styles/ @ecuamaps/styles
+/data/types.txt @ecuamaps/styles
+/data/visibility.txt @ecuamaps/styles
+/data/mapcss-mapping.csv @ecuamaps/styles
+/data/replaced_tags.txt @ecuamaps/styles
+/data/classificator.txt @ecuamaps/styles
+/data/drules_* @ecuamaps/styles
+/docs/STYLES.md @ecuamaps/styles
+/tools/kothic/ @ecuamaps/styles
+
+# DevOps (gradle override — AFTER android catch-all).
+/.github/workflows @ecuamaps/devops
+/android/*gradle* @ecuamaps/devops
+/docs/RELEASE_MANAGEMENT.md @ecuamaps/devops
+/xcode/fastlane/ @ecuamaps/devops
+
+# Growth (overrides — AFTER android/ios catch-alls).
+/README.md @ecuamaps/growth
+/.github/FUNDING.yml @ecuamaps/growth
+/android/app/src/fdroid/play/ @ecuamaps/growth
+/android/app/src/google/play/ @ecuamaps/growth
+/iphone/metadata/ @ecuamaps/growth
+
+# Android docs.
+/docs/ANDROID_LOCATION_TEST.md @ecuamaps/android
+
+# Legal (anchored to repo root).
+/LEGAL @ecuamaps/legal
+/LICENSE @ecuamaps/legal
+/NOTICE @ecuamaps/legal
+/CONTRIBUTORS @ecuamaps/legal
+/docs/CODE_OF_CONDUCT.md @ecuamaps/legal
+/docs/DCO.md @ecuamaps/legal
+/docs/GOVERNANCE.md @ecuamaps/legal

@@ -1,0 +1,4 @@
+api_key_path "keys/appstore.json"
+app_identifier "app.ecuamaps"
+metadata_path "../iphone/metadata"
+screenshots_path "../screenshots/ios"
