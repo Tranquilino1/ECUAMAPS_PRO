@@ -5,41 +5,40 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+
 jobs:
   build:
     name: Compilar APK Nativa
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Install build tools and dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build cmake g++-multilib
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 200
 
-      - name: Configurar Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+      - name: Parallel submodules checkout
+        run: git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
 
-      - name: Configurar Android SDK & NDK
-        uses: android-actions/setup-android@v2
+      - name: Configure repository
+        run: ./configure.sh
 
-      - name: Instalar NDK específico
+      - name: Compilar WebDebug (EG Focus)
+        working-directory: android
         run: |
-          sdkmanager --install "ndk;25.2.9519653"
-          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
-
-      - name: Preparar Herramientas de Compilación
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build g++-multilib
-
-      - name: Compilar APK (Debug para pruebas)
-        run: |
-          cd android
-          ./gradlew assembleWebDebug --stacktrace
+          cmake --version
+          ninja --version
+          ./gradlew -Parm64 assembleWebDebug --stacktrace
 
       - name: Entregar APK (Artifact)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ecuamaps-pro-debug-apk
-          path: android/app/build/outputs/apk/web/debug/app-web-debug.apk
+          name: ecuamaps-pro-apk
+          path: android/app/build/outputs/apk/**/ecuamaps-*.apk
+          if-no-files-found: error
