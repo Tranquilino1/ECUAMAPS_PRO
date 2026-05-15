@@ -1,46 +1,82 @@
-name: ECUAMAPS PRO - Generador de APK
+name: ECUAMAPS PRO - DevOps Ultimate Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
+
+env:
+  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  NDK_VERSION: 25.2.9519653
 
 jobs:
   build:
-    name: Compilar APK Nativa
+    name: Compilación Industrial APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
+      - name: 1. Optimización de Espacio en Disco
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force > /dev/null
+
+      - name: 2. Checkout de Fuentes (Recursivo)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 200
+          fetch-depth: 100
           submodules: recursive
 
-      - name: Configurar Java 17
+      - name: 3. Configuración de Entorno Java y NDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: Instalar Herramientas de Compilación
+      - name: 4. Instalación de Dependencias Nativas (Ubuntu)
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y ninja-build cmake g++-multilib
+          sudo apt-get install -y cmake ninja-build ccache g++-multilib clang
 
-      - name: Configurar Repositorio
+      - name: 5. Configuración de NDK específico
+        run: |
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
+
+      - name: 6. Persistencia de Caché (CCache)
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+
+      - name: 7. Aplicación de Permisos de Ejecución
+        run: |
+          chmod +x ./configure.sh
+          chmod +x ./android/gradlew
+          find . -name "*.sh" -exec chmod +x {} +
+
+      - name: 8. Configuración del Repositorio (C++ Engine)
         run: ./configure.sh
 
-      - name: Compilar APK (WebDebug)
+      - name: 9. Compilación del APK (Ignorando Warnings)
         working-directory: android
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
-          cmake --version
-          ninja --version
-          ./gradlew -Parm64 assembleWebDebug --stacktrace
+          ./gradlew assembleWebDebug \
+            -Parm64 \
+            -Dorg.gradle.project.android.enableLint=false \
+            -Dorg.gradle.warning.mode=none \
+            --stacktrace
 
-      - name: Entregar APK (Artifact)
+      - name: 10. Persistencia del Artefacto Final
         uses: actions/upload-artifact@v4
         with:
-          name: ecuamaps-pro-apk
+          name: ECUAMAPS-PRO-Industrial-Build
           path: android/app/build/outputs/apk/**/ecuamaps-*.apk
           if-no-files-found: error
+          retention-days: 7
