@@ -1,0 +1,56 @@
+name: Build Unsigned iOS IPA
+on:
+  workflow_dispatch: # Permite ejecutar el workflow manualmente desde GitHub Actions
+
+jobs:
+  build-ios-unsigned:
+    name: Build Unsigned iOS IPA
+    runs-on: macos-13
+    
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Restore Boost submodule from cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            3party/boost
+            .git/modules/3party/boost
+          key: boost-submodule
+
+      - name: Parallel submodules checkout
+        shell: bash
+        run: git submodule update --depth 1 --init --recursive --jobs=$(($(sysctl -n hw.logicalcpu) * 20))
+
+      - name: Configure repository
+        shell: bash
+        run: ./configure.sh
+
+      - name: Build Xcode Project
+        shell: bash
+        run: |
+          mkdir -p build
+          xcodebuild build \
+            -workspace xcode/omim.xcworkspace \
+            -scheme OMaps \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -quiet \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CONFIGURATION_BUILD_DIR=$PWD/build
+
+      - name: Package IPA
+        shell: bash
+        run: |
+          mkdir -p Payload
+          mv build/OMaps.app Payload/
+          zip -r OMaps-unsigned.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OMaps-unsigned-ipa
+          path: OMaps-unsigned.ipa
+          retention-days: 7
